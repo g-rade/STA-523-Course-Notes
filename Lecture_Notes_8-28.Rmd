@@ -1,0 +1,184 @@
+---
+title: "Lecture_Notes_8-28"
+author: "Grace Rade"
+date: "2024-08-28"
+output: html_document
+---
+## Logic and Types in R
+
+Almost everything is a vector. A vector is a collection of related values/objects/etc. Atomic vectors are collections of vectors of the same type, generic vectors (lists) are collections of *any* R object. 
+
+### Types of Vectors
+
+  + complex vectors: imaginary numbers, a collection of doubles
+  
+  + raw: raw data values
+  
+Inspecting vectors with the `typeof()` and `mode()` functions to return the type and mode of the object. Mode is a slightly higher level hierarchy (i.e. returns numeric for integers and doubles). 
+
+R is a dynamically typed language, meaning types change. It will automatically convert between most types without raising warnings or errors. 
+
+  + if there are two different types in an atomic vector, R will coerce them to be compatible in a fixed order
+  
+    - character -> double -> integer -> logical
+    
+  + built in operators and functions will generally attempt to coerce values to an appropriate type for the given operation (ex. mathematical functions need numerics or logical operators)
+  
+    + 0 is FALSE, anything $\ne 0$ is TRUE
+    
+#### Missing Values
+
+Missing values are represented by an NA. There are different NA types for different types of objects (ex. a missing value in a logical vector will be a type logical, for character it will be a character). We love how R accounts for missing data and then does something reasonable about it. 
+
+```{r}
+## Ex. 
+
+typeof(NA) ## default NA is a logical
+typeof(NA_character_) ## woo it's a character
+typeof(c(NA,"")) ## character again, coerced to character
+typeof(NA+1L) ## integer
+typeof(NA_complex_) ## a number so complex we don't know what it is
+typeof(NA_real_) ## ooohhh a double
+```
+
+NAs are sticky, so operations that encounter an NA will propagate it throughout (remember using `summarize()`). Lots of functions will allow us to remove NAs, keep that in mind for things like mean. 
+
+NAs aren't always sticky though. It's helpful for logical vectors to consider them as an unknown value that could take on any of the possible values. 
+
+```{r}
+TRUE & NA ## the NA could be false, so we return an NA meaning unknown value
+FALSE & NA ## returns false b/c false is always false so it doesn't matter what the NA is
+TRUE | NA
+FALSE | NA
+```
+
+Other missing values are `NaN` for "not a number", `Inf` and `-Inf` for positive and negative infinity. Follows math rules. It's a little weird but unlikely to actually encounter these. 
+
+```{r}
+## some predicate functions for Inf and NaN
+
+is.finite(Inf)
+is.infinite(-Inf)
+is.nan(NaN)
+```
+
+Coersion can be weird. 
+
+### Exercise 1
+
+What type are these vectors? 
+
+```{r}
+c(1, NA+1L, "C") ## Guess: character NA
+c(1L / 0, NA) ## Guess: NA
+c(1:3, 5) ## Guess: integer
+c(3L, NaN+1L) ## Guess: NaN
+c(NA, TRUE) ## Guess: logical
+```
+
+```{r}
+typeof(c(1, NA+1L, "C")) ## Answer: character (the NA is coerced to a character, so is the rest)
+typeof(c(1L / 0, NA)) ## Answer: double (Inf is a double, and double wins over logical NA)
+typeof(c(1:3, 5)) ## Answer: double (5 is a double b/c not specified as int)
+typeof(c(3L, NaN+1L)) ## Answer: double (NaN + an int is a double)
+typeof(c(NA, TRUE)) ## Answer: logical (yay correct, NA is logical by default)
+```
+
+What's the type conversion hierarchy: character -> double -> integer -> logical
+
+### Control Flow
+
+**Logical Operators:**
+
+  + x & y: vectorized and
+  
+  + x | y: vectorized or
+  
+  + !x: not (vectorized w/ no non-vectorized alternative)
+  
+  + xor(x, y): exclusive or (vector)
+  
+  + x && y: non-vectorized and
+  
+  + x || y: non-vectorized or
+  
+Vectorized means that when we do an operation, we pay attention to the fact that the object is a vector and do element-wise comparisons. Non-vectorized operations expect a single value input and returns an error if there are multiple elements. We usually only use && and/or || to take advantage of short circuit evaluation. Vectorization applied to math as well. 
+
+**Recycling Rules:** If the lengths of the vector do not match, then the shorter vector has its values recycled to match the length of the longer vector. The longer one has to be a multiple of the shorter one, if not it will get funky. 
+
+**Comparison Operators**
+
+  + x < y: less than
+  
+  + x > y: greater than
+  
+  + x <= y: less than or equal to
+  
+  + x >= y: greater than or equal to
+  
+  + x != y: not equal to
+  
+  + x == y: equal to
+  
+  + x %in% y: in/contains, vectorized over x (returned value will have the length of x regardless of the length of y)
+  
+Can use comparison operators with character values. < and > can be a little unexpected but also work on character vectors. Alphabetical order (lowercase ordered before uppercase). 
+
+**Conditions**
+
+R has if and else statements, but they are not vectorized. So they only check a single value. We can use the `any()` or `all()` functions to do a bit of a work-around when necessary. We also have else if to do a secondary if statement (mutually exlcusive options). 
+
+```{r}
+x = 3
+
+if (x < 0) { ## r checks the if
+  "x is negative"
+} else if (x > 0) { ## the if is False, so r checks the else if
+  "x is positive"
+} else { ## the else if is True, r does not check the else
+  "x is zero"
+}
+
+x = 0
+
+if (x < 0) { ## r checks the if
+  "x is negative"
+} else if (x > 0) { ## the if is False, so r checks the else if
+  "x is positive"
+} else { ## the else if is Fale, r checks teh else
+  "x is zero"
+}
+```
+
+
+Conditionals return a value invisibly. If you want to see it, you either have to return a print statement or save it to a variable and call it. 
+
+
+#### Exercise 2
+
+What do you expect the output to be?
+
+```{r}
+f = function(x) {
+  # Check small prime
+  if (x > 10 || x < -10) {
+    stop("Input too big")
+  } else if (x %in% c(2, 3, 5, 7)) {
+    cat("Input is prime!\n")
+  } else if (x %% 2 == 0) {
+    cat("Input is even!\n")
+  } else if (x %% 2 == 1) {
+    cat("Input is odd!\n")
+  }
+}
+f(1) ## Guess: "Input is odd!" (correct)
+f(3) ## Guess: "Input is prime!" (correct)
+f(8) ## Guess: "Input is even!" (correct)
+f(-1) ## Guess: "Input is odd!" (correct)
+f(-3) ## Guess: "Input is odd!" (correct)
+f(1:2) ## Guess: warning b/c length of vector, "Input is odd!" (Answer: error, coercion)
+f("0") ## Guess: error message, data type (correct)
+f("3") ## Guess: error message, data type (Answer: error, input too big)
+f("zero") ## Guess: error message, data type (Answer: error, input too big)
+```
+
