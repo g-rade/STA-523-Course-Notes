@@ -1,0 +1,132 @@
+---
+title: "Reading_Notes_9_4-2024"
+author: "Grace Rade"
+date: "2024-09-03"
+output: html_document
+---
+## Control Flow and Error Handling
+
+### if statements
+
+if statements evaluate a condition statement to TRUE/FALSE and then exectute some code based on that result. If the statement is TRUE, then the code under the if statement will execute, if the condition is FALSE, the code under the optional else statement will evaluate or nothing will happen.
+
+```{r}
+## example
+
+x <- 2
+
+if (x == 1) {
+  print(x)
+} else {
+  print("no x")
+}
+
+## different syntax
+
+if (x == 1) print(x) else print("no") ## can do it all in one line
+
+## vectorized if
+ifelse(x ==1, print(x), print("no x"))
+```
+
+The switch statement can compress in certain circumstances. 
+```{r}
+x_option <- function(x) {
+  if (x == "a") {
+    "option 1"
+  } else if (x == "b") {
+    "option 2" 
+  } else if (x == "c") {
+    "option 3"
+  } else {
+    stop("Invalid `x` value")
+  }
+} ## og code, very wordy
+
+x_option <- function(x) {
+  switch(x,
+    a = "option 1",
+    b = "option 2",
+    c = "option 3",
+    stop("Invalid `x` value") ## the last option should always be an error statement
+  )
+} ## ooh streamlined
+```
+
+### Loops
+
+for loops are used to iterate over items in a vector. while loops iterate until a condition evaluates to false
+
+```{r}
+## for loop example
+
+for (i in 1:3) {
+  print(i)
+}
+
+```
+
+You can exit a loop early by using `next` or `break` statements. `next` will skip to the next iteration and `break` will exit the loop completely. Remeber to pre-allocate data containers when generating data using a loop. You can also use a `pass` statement to do nothing when the syntax of the code requires you to put something there. 
+
+### Error Handling
+
+Condition systems provide paired set of tools that allow the author of a function to indicate that something unusual is happening, and the user of that function to deal with it. The function signals conditions with `message()`, `error()`, `warning()`, `tryCatch()`, and/or `withCallingHandlers()`. 
+
+  + `stop()`: throws errors, the code that is being executed is halted and the error message is output into the console, they indicate that there is no way the function can continue; you only get one per function call
+  
+  + `warning()`: signals that there is potential for downstream issues but the current code can continue to execute; can have multiple per function call
+  
+  + `message()`: tells the user stuff, purely informative; can have multiple per function call
+  
+You can ignore/suppress conditions with `try()`, `suppressWarnings()`, and `suppressMessages()`. 
+
+  + `try()` allows the code to continue to execute after an error has occurred. Wrap a line of code in it. The error message will still print but the execution will continue. 
+  
+
+Condition handlers allow us to temporarily override or supplement the default behaviour. These are `tryCatch()` and `withCallingHandlers()`
+
+```{r}
+## form and syntax
+
+tryCatch(
+  error = function(cnd) {
+    # code to run when error is thrown
+  },
+  code_to_run_while_handlers_are_active
+)
+
+withCallingHandlers(
+  warning = function(cnd) {
+    # code to run when warning is signalled
+  },
+  message = function(cnd) {
+    # code to run when message is signalled
+  },
+  code_to_run_while_handlers_are_active
+)
+```
+
+  + `tryCatch()` defines exiting handlers; after the condition is handled, control returns to the context where `tryCatch()` was called. This makes `tryCatch()` most suitable for working with errors and interrupts, as these have to exit anyway
+  
+  + `withCallingHandlers()` defines calling handlers; after the condition is captured control returns to the context where the condition was signalled. This makes it most suitable for working with non-error conditions.
+  
+You can look at the object created by a condition using `rlang::catch_cnd()`. Built-in conditions are lists with two elements:
+
+  + Message, a length-1 character vector containing the text to display to a user. To extract the message, use `conditionMessage(cnd)`.
+
+  + Call, the call which triggered the condition. As described above, we don’t use the call, so it will often be NULL. To extract it, use `conditionCall(cnd)`.
+  
+You can also create custom error conditions using `rlang::abort()`. This contains additional metadata that can help detect a specific type of error. 
+
+```{r}
+## form and syntax
+
+abort(
+  "error_not_found",
+  message = "Path `blah.csv` not found", 
+  path = "blah.csv"
+)
+#> Error: Path `blah.csv` not found
+```
+
+  
