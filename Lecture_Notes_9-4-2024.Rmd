@@ -185,8 +185,9 @@ for (val in x){
     }
   }
 }
-  if (!is_prime) {
-   res = append(res, val)
+ if (!is_prime) {
+   res = c(res, val)
+ }
 }
 
 res
