@@ -1,0 +1,194 @@
+---
+title: "Lecture_Notes_9-4-2024"
+author: "Grace Rade"
+date: "2024-09-04"
+output: html_document
+---
+
+Admin:
+
+-   HW 1 due 9/16 5:00 pm
+
+-   Whatever is on GitHub at the time (main branch) is what is going to be graded
+
+-   GitHub actions tests: check allowed files (only the ones already in the repo), check the rendering
+
+## Error Checking, Functions, Loops
+
+#### Error Checking
+
+`stopifnot()` is an alternative to `stop()` that we use to combine a conditional with a stop call.
+
+```{r}
+ok = FALSE
+## og workflow with stop()
+if (!ok)
+  stop(
+    "Things are not ok.", 
+    call. = FALSE
+  )
+
+stopifnot(ok) ## stopifnot() workflow
+```
+
+Style note: put the error checking in a separate conditional block so that it executes in isolation and reason through the code... bail out early whenever possible
+
+```{r}
+## Exercise 1
+
+x = 5
+y = 2
+
+if (x %% 2 == 1 & y %% 2 == 0){
+ stop('oh no! x is odd and y is even')
+ } ## make sure to put this before the other conditions so it executes when we want it to
+
+if (x > 3 & y <= 3){
+  print("Hello world!")
+} else if (x > 3) {
+  print('!dlrow olleH')
+} else if (x <= 3){
+  print('Something else...')
+} 
+```
+
+#### Functions
+
+Functions are objects that do stuff to help us break up complicated processes into modular pieces that are self-contained and reusable.
+
+```{r}
+gcd = function(x1, y1, x2 = 0, y2 = 0) {
+  R = 6371 # Earth mean radius in km
+  
+  # distance in km
+  acos(sin(y1)*sin(y2) + cos(y1)*cos(y2) * cos(x2-x1)) * R
+}
+
+## gcd is the great circle distance
+```
+
+You can check what the arguments of a function are using `str(formals(x))` and see the source code of the function w/o whitespace and comments using `str(body(x))` for the function object x.
+
+```{r}
+## explicit and implicit returns
+
+## explicit using one or more return statements
+
+f = function(x) {
+  return(x * x)
+}
+f(2)
+
+## implicit, not using a return statement
+
+g = function(x) {
+  x * x ## this is returned since it is the last line of the function body
+}
+g(3)
+
+g = function(x) {
+  invisible(x) ## this function prevents the returned value from being printed out into the console, you can save it to an object
+}
+
+```
+
+You can only return one object per function, so if you want to return multiple things you have to put them into a vector or list to return only one object.
+
+**Scope:** R has generous scoping rules, if it can’t find a variable in the current scope (e.g. a function’s body) it will look for it in the next higher scope, and so on until it runs out of environments or an object with that name is found.
+
+```{r}
+## ex. 
+
+y = 1
+
+f = function(x) {
+  x + y
+}
+
+f(3)
+
+## y is not an argument of the function, but it is a global variable. R looks in f() for the vairable y, doesn't find it, and then then checks the global environment for y and finds it. be careful with this
+
+y = 1
+
+g = function(x) {
+  y = 2 ## y is now defined within g() and outside of g(). R finds y within the function environment, so it doesn't need to invoke the global variable y
+  x + y
+}
+
+g(3)
+```
+
+Lazy evaluation means that functions arguments are only evaluate when needed. 
+
+```{r}
+f = function(x) {
+  TRUE ## f() doesn't do shit with x, just returns TRUE
+}
+
+f(1)
+f(stop("Error")) ## x is not evaluated, just not touched at all so no error thrown
+
+g = function(x) {
+  x ## g() does do shit with x
+  TRUE ## still returns TRUE b/c it is the last thing in the body
+}
+
+g(1)
+g(stop("Error"))
+```
+
+Operators can be used as functions (e.g. +). Just refer to them with `+` backticks around them to reference them as a function. Weeeeee. 
+
+#### Loops
+
+Yay loops! We use them to iterate over a vector, examine the individual values, and do something with that. 
+
+Repeat loops: Equivalent to a while(TRUE){} loop, it repeats until a break statement. Be careful not to get stuck in an infinite loop. Replace loops are like while but without checking, so the programmer has to be the one to check the condition and decide when to exit the loop. Useful when you want to check the condition at the end of the iteration instead of the beginning. 
+
+```{r}
+make_seq2 = function(from = 1, to = 1, by = 1) {
+  res = c(from)
+  cur = from
+  
+  repeat {
+    cur = cur + by
+    if (cur > to) 
+      break
+    res = c(res, cur)
+  }
+  
+  res
+}
+
+make_seq2(1, 6)
+```
+
+
+```{r}
+## Exercise 3
+
+primes = c( 2,  3,  5,  7, 11, 13, 17, 19, 23, 
+           29, 31, 37, 41, 43, 47, 53, 59, 61, 
+           67, 71, 73, 79, 83, 89, 97)
+
+x = c(3,4,12,19,23,51,61,63,78)
+
+res = c()
+## iterate through x and only return the values that aren't prime (aka aren't in primes)
+for (val in x){
+  is_prime = FALSE
+  for (prime in primes){
+    if (val == prime){
+      is_prime = TRUE
+      break
+    }
+  }
+ if (!is_prime) {
+   res = c(res, val))
+ }
+}
+
+res
+```
+
