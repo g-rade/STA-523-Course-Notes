@@ -1,0 +1,257 @@
+---
+title: "Reading_Notes_9-9-2024"
+author: "Grace Rade"
+date: "2024-09-04"
+output: html_document
+---
+## List Attributes and S3
+
+#### OOP Basics
+
+Central to any object-oriented system are the concepts of class and method. A class defines the behaviour of objects by describing their attributes and their relationship to other classes. The class is also used when selecting methods, functions that behave differently depending on the class of their input. Classes are usually organised in a hierarchy: if a method does not exist for a child, then the parent’s method is used instead; the child inherits behavior from the parent.
+
+  + R uses S3 OOP, which is a generic OOP method. S3 also uses message passing. When messages (methods) are sent to objects and the object determines which function to call. While computations are still carried out via methods, a special type of function called a generic function decides which method to call. It has no formal definition of classes. 
+
+  + R also uses S4.  S4 has formal class definitions, which describe the representation and inheritance for each class, and has special helper functions for defining generics and methods. S4 also has multiple dispatch, which means that generic functions can pick methods based on the class of any number of arguments, not just one.
+  
+  + Reference classes, called RC for short, are quite different from S3 and S4. RC implements message-passing OO, so methods belong to classes, not functions. `$` is used to separate objects and methods, so method calls look like canvas$drawRect("blue"). RC objects are also mutable: they don’t use R’s usual copy-on-modify semantics, but are modified in place. This makes them harder to reason about, but allows them to solve problems that are difficult to solve with S3 or S4.
+  
+  + R also uses base types. base types, the internal C-level types that underlie the other OO systems. Base types are mostly manipulated using C code, but they’re important to know about because they provide the building blocks for the other OO systems.
+  
+#### Base Types
+
+Underlying every R object is a C structure (or struct) that describes how that object is stored in memory. The struct includes the contents of the object, the information needed for memory management, and, most importantly for this section, a type. This is the base type of an R object.
+
+The functions `mode()` and `storage.mode()` are very similar to `typeof()`, so you can ignore them. 
+
+#### S3
+
+S3 is the most basic OO system that R uses, and the most common. To check and see if something is an S3 object, `pryr::otype()`. In S3, methods belong to functions, called generic functions, or generics for short. S3 methods do not belong to objects or classes. To see if a function is a generic, inspect the source code and look for `UseMethod()`, which is the function that identifies which method needs to be called. Some methods use the C code functions `DispatchGroup()` or `DispatchOrEval()`, and are called internal generics. 
+
+You can recognize methods in their names becuase they follow the format: `generic.class()`. 
+
+Some useful functions:
+  
+  + `methods()` to see all the methods for a generic
+  
+  + `structure()` creates and assigns class in one step
+  
+    * `class() <-` assigns a class attribute to an object after the fact
+    
+    * S3 objects are usually built on top of lists or atomic vectors by adding a class attribute
+    
+```{r}
+## you can make a constructor function
+
+foo <- function(x) {
+  if (!is.numeric(x)) stop("X must be numeric") ## checks input
+  structure(list(x), class = "foo") ## makes it a list object with class "foo"
+}
+```
+
+
+You can also make your own methods and generics.
+
+```{r}
+f <- function(x) UseMethod("f") ## create the generic (can also do the {} format)
+
+## now create a method
+f.a <- function(x) "Class a" ## create the method for class a, this method only outputs "Class a"
+
+a <- structure(list(), class = "a") ## make an object a with class a
+class(a) 
+
+f(a) ## see it works, this is how the function f() works on objects of class a
+```
+
+Method dispatch is pretty simple. `UseMethod()` creates a vector of the function names and looks for the correct one to call. If you have complex class hierarchies it’s sometimes useful to call the “parent” method. It’s a little bit tricky to define exactly what that means, but it’s basically the method that would have been called if the current method did not exist. Again, this is an advanced technique: you can read about it in ?NextMethod.
+
+#### S4
+
+S4 works very similarly to S3. Methods still belong to functions, not classes. But:
+
+  + Classes have formal definitions which describe their fields and inheritance structures (parent classes).
+
+  + Method dispatch can be based on multiple arguments to a generic function, not just one.
+
+  + There is a special operator, @, for extracting slots (aka fields) from an S4 object.
+  
+```{r}
+## recognizing an S4 object
+
+library(stats4)
+
+# From example(mle)
+y <- c(26, 17, 13, 12, 20, 5, 9, 8, 5, 4, 8)
+nLL <- function(lambda) - sum(dpois(y, lambda, log = TRUE))
+fit <- mle(nLL, start = list(lambda = 5), nobs = length(y))
+
+# An S4 object
+isS4(fit)
+#> [1] TRUE
+otype(fit)
+#> [1] "S4"
+
+# An S4 generic
+isS4(nobs)
+#> [1] TRUE
+ftype(nobs)
+#> [1] "s4"      "generic"
+
+# Retrieve an S4 method, described later
+mle_nobs <- method_from_call(nobs(fit))
+isS4(mle_nobs)
+#> [1] TRUE
+ftype(mle_nobs)
+```
+  
+An S4 class has three key properties:
+
+  + A name: an alpha-numeric class identifier. By convention, S4 class names use UpperCamelCase.
+
+  + A named list of slots (fields), which defines slot names and permitted classes. For example, a person class might be represented by a character name and a numeric age: list(name = "character", age = "numeric").
+
+  + A string giving the class it inherits from, or, in S4 terminology, that it contains. You can provide multiple classes for multiple inheritance, but this is an advanced technique which adds much complexity.
+```{r}
+## defining an S4 object
+setClass("Person",
+  slots = list(name = "character", age = "numeric"))
+setClass("Employee",
+  slots = list(boss = "Person"),
+  contains = "Person")
+
+alice <- new("Person", name = "Alice", age = 40)
+john <- new("Employee", name = "John", age = 20, boss = alice)
+
+## To access slots of an S4 object use @ or slot():
+```
+
+If an S4 object contains (inherits from) an S3 class or a base type, it will have a special .Data slot which contains the underlying base type or S3 object.
+
+```{r}
+## creating new methods and generics
+
+setGeneric("union")
+setMethod("union",
+  c(x = "data.frame", y = "data.frame"),
+  function(x, y) {
+    unique(rbind(x, y))
+  }
+)
+
+## create a new generic from scratch
+
+setGeneric("myGeneric", function(x) {
+  standardGeneric("myGeneric")
+})
+
+```
+
+If an S4 generic dispatches on a single class with a single parent, then S4 method dispatch is the same as S3 dispatch. The main difference is how you set up default values: S4 uses the special class ANY to match any class and “missing” to match a missing argument.
+
+Method dispatch becomes considerably more complicated if you dispatch on multiple arguments, or if your classes use multiple inheritance. The rules are described in ?Methods, but they are complicated and it’s difficult to predict which method will be called. For this reason, avoiding multiple inheritance and multiple dispatch unless absolutely necessary.
+
+```{r}
+## medthod dispatch methods
+
+# From methods: takes generic name and class names
+selectMethod("nobs", list("mle"))
+
+# From pryr: takes an unevaluated function call
+method_from_call(nobs(fit))
+```
+
+
+#### RC
+
+RC is the newest OO system. It differs from S3 and S4 by:
+
+  + RC methods belong to objects, not functions
+  
+  + RC objects are mutable: the usual R copy-on-modify semantics do not apply
+  
+First we have to start by creating a reference class. 
+
+```{r}
+Account <- setRefClass("Account")
+Account$new()
+
+## setRefClass() also accepts a list of name-class pairs that define class fields (equivalent to S4 slots). Additional named arguments passed to new() will set initial values of the fields. You can get and set field values with $:
+
+Account <- setRefClass("Account",
+  fields = list(balance = "numeric"))
+
+a <- Account$new(balance = 100)
+a$balance
+#> [1] 100
+a$balance <- 200
+a$balance
+
+```
+
+Instead of supplying a class name for the field, you can provide a single argument function which will act as an accessor method. This allows you to add custom behaviour when getting or setting a field. See ?setRefClass for more details. For this reason, RC objects come with a copy() method that allow you to make a copy of the object. 
+
+```{r}
+b <- a
+b$balance
+#> [1] 200
+a$balance <- 0
+b$balance
+#> [1] 0
+
+c <- a$copy()
+c$balance
+#> [1] 0
+a$balance <- 100
+c$balance
+
+```
+
+RC methods are associated with a class and can modify its fields in place. In the following example, note that you access the value of fields with their name, and modify them with `<<-`. 
+
+```{r}
+Account <- setRefClass("Account",
+  fields = list(balance = "numeric"),
+  methods = list(
+    withdraw = function(x) {
+      balance <<- balance - x
+    },
+    deposit = function(x) {
+      balance <<- balance + x
+    }
+  )
+)
+```
+
+```{r}
+## call an RC method the same way you'd access a field
+a <- Account$new(balance = 100)
+a$deposit(100)
+a$balance
+```
+
+The final important argument to setRefClass() is contains. This is the name of the parent RC class to inherit behaviour from. The following example creates a new type of bank account that returns an error preventing the balance from going below 0.
+
+```{r}
+NoOverdraft <- setRefClass("NoOverdraft",
+  contains = "Account",
+  methods = list(
+    withdraw = function(x) {
+      if (balance < x) stop("Not enough money")
+      balance <<- balance - x
+    }
+  )
+)
+accountJohn <- NoOverdraft$new(balance = 100)
+accountJohn$deposit(50)
+accountJohn$balance
+#> [1] 150
+accountJohn$withdraw(200)
+
+```
+
+All reference classes eventually inherit from envRefClass. It provides useful methods like copy() (shown above), callSuper() (to call the parent field), field() (to get the value of a field given its name), export() (equivalent to as()), and show() (overridden to control printing). See the inheritance section in setRefClass() for more details
+
+Check if an object is an RC method/class using `pryr::otype()` or `(is(x, "refClass"))`. 
+
+Method dispatch is very simple in RC because methods are associated with classes, not functions. When you call x$f(), R will look for a method f in the class of x, then in its parent, then its parent’s parent, and so on. From within a method, you can call the parent method directly with callSuper(...)
