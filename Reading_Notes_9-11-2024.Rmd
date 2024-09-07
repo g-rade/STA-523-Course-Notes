@@ -1,0 +1,191 @@
+---
+title: "Reading_Notes_9-11-2024"
+author: "Grace Rade"
+date: "2024-09-06"
+output: html_document
+---
+## Subsetting
+
+Mastery of R's subsetting allows you to succinctly express complex operations in a way that few other languages can match. Yay!
+
+#### Atomic Vectors
+
+We use `[` to subset an atomic vector. There are five wayz to subset an atomic vector:
+
+  + Positive integers return elements at the specified positions
+  
+  + Negative intigers omit elements at the specified positions
+    
+    - Negatyive and positive integers cannot be used in the same subsetting statement
+  
+  + Logical vectors select elements where the corresponding logical value is true
+  
+  + Nothing returns the original vector
+  
+  + Zero returns a zero length vector
+  
+    - this can be helpful when generating test data, but not something you usually do on purpose. 
+
+```{r}
+## lets start with a simple vector
+
+x <- c(2.1, 4.2, 3.3, 5.4)
+
+x[c(3, 1)] ## positive ints
+
+x[-c(3, 1)] ## negative ints
+
+x[c(TRUE, TRUE, FALSE, FALSE)]. ## logical
+
+```
+
+Character vectors can alsu be used ins ubsetting if the vector is named.
+
+```{r}
+(y <- setNames(x, letters[1:4])) ## make it a named vector
+
+y[c("d", "c", "a")]
+
+
+```
+
+
+#### Lists
+
+Lists can also be subset with `[`. When using `[`, it will always return a list. But you can also use `[[` and `$` to pull componenets of the list. 
+
+
+#### Matrices and Arrays
+
+You can subset higher-dimensional structures in three ways:
+
+  + With multiple vectors.
+
+  + With a single vector.
+  
+  + With a matrix.
+  
+The most common way of subsetting matrices (2d) and arrays (>2d) is a simple generalisation of 1d subsetting: you supply a 1d index for each dimension, separated by a comma. Blank subsetting is now useful because it lets you keep all rows or all columns.
+
+```{r}
+a <- matrix(1:9, nrow = 3)
+colnames(a) <- c("A", "B", "C")
+
+a[1:2, ] ## subset the first two columns
+
+a[c(TRUE, FALSE, TRUE), c("B", "A")]
+
+```
+
+You can also subset higher dimension data structures with a matrix. 
+
+```{r}
+vals <- outer(1:5, 1:5, FUN = "paste", sep = ",") ## make an array
+select <- matrix(ncol = 2, byrow = TRUE, c(
+  1, 1,
+  3, 1,
+  2, 4
+)) ## make a matrix
+vals[select] ## subset the thing by the matrix
+
+```
+
+
+#### Data Frames
+
+Data frames possess the characteristics of both lists and matrices: if you subset with a single vector, they behave like lists; if you subset with two vectors, they behave like matrices.
+
+```{r}
+df <- data.frame(x = 1:3, y = 3:1, z = letters[1:3])
+
+df[df$x == 2, ]
+
+df[c(1, 3), ]
+
+
+# There are two ways to select columns from a data frame
+# Like a list:
+df[c("x", "z")]
+
+# Like a matrix
+df[, c("x", "z")]
+
+
+# There's an important difference if you select a single 
+# column: matrix subsetting simplifies by default, list 
+# subsetting does not.
+str(df["x"])
+
+str(df[, "x"])
+```
+
+S3 objects are made up of base types, so they can be subset normally. S4 objects are subset using `@` (equivalent to `$`) and `slot()` (equivalent to `[[`). 
+
+#### [[
+
+  + `[[` behaves like `[`, but it can only return a single value. `[` always gives you a list, but not the contents of the list
+  
+    - “If list x is a train carrying objects, then x[[5]] is the object in car 5; x[4:6] is a train of cars 4-6.” (@RLangTip)
+    
+```{r}
+## you can only use positive integers or strings to subet
+a <- list(a = 1, b = 2)
+a[[1]]
+
+a[["a"]]
+
+
+# If you do supply a vector it indexes recursively
+b <- list(a = list(b = list(c = list(d = 1))))
+b[[c("a", "b", "c", "d")]]
+
+b[["a"]][["b"]][["c"]][["d"]]
+```
+
+#### Simplyifying vs. Preserving
+
+Simplifying subsets returns the simplest possible data structreu that can represent the output. Preserving subsetting keeps the structure of the output the same as the input and is generally better for programming becuase it will awlays result in the same time. 
+
+```{r, echo = F}
+data.frame(Simplyifying = c("x[[1]]", "x[[1]]", "x[1:4, drop = T", "x[1, ] or x[, 1]", "x[, 1] or x[[1]]"), Preserving = c("x[1]", "x[1]", "x[1:4]","x[1, , drop = F] or x[, 1, drop = F]", "x[, 1, drop = F] or x[1]"), row.names = c("Vecotr", "List", "Factor", "Array", "Data Frame"))
+```
+
+Simplyfying behavior varies slightly between different data types:
+
+  + Atomic vectors: removes names
+  
+  + Lists: return the object inside the list, not a single element list
+  
+  + Factor: drops any unused levels
+  
+  + Matrix or array: if ano of the dimensions has length 1,drops that dimenstion
+  
+  + Data frame: if the output is a single column, reutrns a vector instead of a data frame
+  
+### $
+
+`$` is a shorthand operator, where `x$y` is equivalent to `x[["y", exact = FALSE]]`. It's often used to access variables ina. data frame. 
+
+```{r}
+## doesn't work when the column is stored in a variable
+var <- "cyl"
+# Doesn't work - mtcars$var translated to mtcars[["var"]]
+mtcars$var
+
+# Instead use [[
+mtcars[[var]]
+
+```
+
+* Note that `[` and `[[` differ slightly when the indes is out of bounds. 
+
+#### Subsetting and Assignment
+
+You can do it. That's fun. It's good for conditional changes to a vector. 
+
+```{r}
+x <- 1:5
+x[c(1, 2)] <- 2:3 ## just use the assignment operator on a subset
+x
+```
+
