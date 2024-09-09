@@ -1,0 +1,42 @@
+---
+title: "Lecture_Notes_9-9-2024"
+author: "Grace Rade"
+date: "2024-09-09"
+output: html_document
+---
+
+## Lists, Attributes, and S3
+
+#### Generic Vectors (lists)
+
+Lists can contain a heterogeneous collection of R objects. These objects can be objects of any type, and they won't get coerced. Lists can also contain other lists, meaning they don't have to be flat. 
+
+  + can hold functions and other lists, all sorta of fun stuff
+  
+#### Nulls
+
+`NULL` is a special value in R that represents nothing, always has a length zero and a type and mode of "NULL", and cannot have any attributes. 0-length length coercion is a special case of length coercion when one of the arguments has length 0.
+
+#### Attributes
+
+Attributes are pieces of metadata about objects in R. The most important attributes will have helper functions to get and set them. 
+
+For non-common attributes, or if you don't want to use the helper function, you can use the `attr()` function. 
+
+```{r}
+(x = c(L=1,M=2,N=3))
+
+## set an attribute
+attr(x, "names") = 1
+
+## see the attribute
+attributes(x)
+```
+
+We often use attributes when working with factor objects. Factor objects are how R represents categorical data (e.g. a vairable wherre there is a discrete set of possible outcomes)
+
+```{r}
+(x = factor(c("Sunny", "Cloudy", "Rainy", "Cloudy", "Cloudy")))
+
+```
+
