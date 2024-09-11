@@ -1,0 +1,73 @@
+---
+title: "Lecture_Notes_9-11-2024"
+author: "Grace Rade"
+date: "2024-09-11"
+output: html_document
+---
+## S3, Subsetting
+
+#### S3
+
+```{r}
+## defining a new generic
+shuffle = function(x) {
+  UseMethod("shuffle")
+}
+
+## now we define a method
+shuffle.factor = function(f) {
+  factor( sample(as.character(f)), levels = sample(levels(f)) )
+}
+
+shuffle.integer = function(x) {
+  sample(x)
+}
+
+shuffle.default = function(x) {
+  stop("Class ", class(x), " is not supported by shuffle.", call. = FALSE)
+}
+
+## test it
+shuffle( 1:10 )
+shuffle( factor(c("A","B","C","A")) )
+```
+
+#### Matrices 
+
+R supports the creation of 2d data structures of atomic vector types. Generally these are formed via a call to `matrix()`. They can support any type of object.
+
+Matrices in R use column major ordering (data is stored in by column). We can populate a matrix by row, but the data is still stored by column. 
+
+They are atomic vectors with a dimension attribute. Matrices (and arrays) are just atomic vectors with a dim attribute attached, they do not have a class attribute, but they do have an implicit matrix (and array) class. Arrays are just an n-dimensional extension of matrices and are defined by adding the appropriate dimension sizes.
+
+#### Data Frames
+
+A data frame is how R handles heterogeneous tabular data and is one of the most commonly used data structures in R. R stores data frames using a *list of equal length vectors* (atomic or generic).
+
+```{r}
+(df = data.frame(
+  x = 1:3, 
+  y = c("a", "b", "c"),
+  z = c(TRUE)
+))
+
+```
+
+Previous to R v4.0, the default behavior of data frames was to convert character data into factors. Sometimes this was useful, but mostly it wasn’t. This behavior is controlled via the `stringsAsFactors` argument to data.frame (and related functions like read.csv, read.table, etc.).
+
+#### Subsetting
+
+```{r}
+## Exercise 1
+
+x = c(56, 3, 17, 2, 4, 9, 6, 5, 19, 5, 2, 3, 5, 0, 13, 12, 6, 31, 10, 21, 8, 4, 1, 1, 2, 5, 16, 1, 3, 8, 1, 3, 4, 8, 5, 2, 8, 6, 18, 40, 10, 20, 1, 27, 2, 11, 14, 5, 7, 0, 3, 0, 7, 0, 8, 10, 10, 12, 8, 82, 21, 3, 34, 55, 18, 2, 9, 29, 1, 4, 7, 14, 7, 1, 2, 7, 4, 74, 5, 0, 3, 13, 2, 8, 1, 6, 13, 7, 1, 10, 5, 2, 4, 4, 14, 15, 4, 17, 1, 9)
+
+
+x[seq(2, length(x), by = 3)] ## Select every third value starting at position 2 in x
+
+x[seq(1, length(x), by = 2)-1] ## Remove all values with an odd index (e.g. 1, 3, etc.)
+
+x[(!seq_along(x) %in% seq(1, length(x), by = 4)) & (x %% 2 ==1)] ## Remove every 4th value, but only if it is odd
+
+```
+
