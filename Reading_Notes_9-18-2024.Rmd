@@ -1,0 +1,56 @@
+---
+title: "Reading_Notes_9-18-2024"
+author: "Grace Rade"
+date: "2024-09-14"
+output: html_document
+---
+## Rectangling
+
+Rectangling is the art and craft of taking a deeply nested list (often sourced from wild caught JSON or XML) and taming it into a tidy data set of rows and columns. There are three functions from tidyr that are particularly useful for rectangling:
+
+  + `unnest_longer()` takes each element of a list-column and makes a new row.
+
+  + `unnest_wider()` takes each element of a list-column and makes a new column.
+
+  + `hoist()` is similar to `unnest_wider()` but only plucks out selected components, and can reach down multiple levels.
+  
+    - `hoist()` removes the named components from the user list-column, so you can think of it as moving components out of the inner list into the top-level data frame.
+  
+```{r}
+library(tidyr)
+library(dplyr)
+library(repurrrsive)
+```
+
+#### GitHub Users
+
+```{r}
+users <- tibble(user = gh_users) ## import the data, each value is a list (no good to us)
+
+users %>% unnest_wider(user) ## we can use unnest_wider() to make each value of the list into a column
+
+users %>% hoist(user, 
+  followers = "followers", 
+  login = "login", 
+  url = "html_url"
+) ## or we can use hoist() to only get the few columns we want, syntax similar to purrr:pluck()
+```
+
+#### GitHub Repos
+
+```{r}
+repos <- tibble(repo = gh_repos) ## similar import format to users
+
+## this time the repos re a list of repositories that belong to that user. These are observations, so they should become rows
+
+repos <- repos %>% 
+  unnest_longer(repo) ## now they are rows
+
+repos %>% hoist(repo, 
+  login = c("owner", "login"), 
+  name = "name",
+  homepage = "homepage",
+  watchers = "watchers_count"
+) ## now they are variables
+```
+

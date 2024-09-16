@@ -1,0 +1,80 @@
+---
+title: "Lecture_Notes_9-16-2024"
+author: "Grace Rade"
+date: "2024-09-16"
+output: html_document
+---
+
+## Tidy Data and tidyr
+
+We love the tidyverse! Helps us work to clean data. <3
+
+Tidy data is a format that is designed to be most effective for cleaning data and modeling it. To take from Tolstoy, "all tidy datasets are alike; every untidy dataset is untidy in it's own way". 
+
+"Ragged dataset": not all observations have the same amount of data (ex. Hot 100 Songs, not al songs are on the Hot 100 for the same amount of time)
+
+#### Tiddbles: Data frames but modern
+
+Data frames as a sturcute can have some annoying behaviors. Tibbles smooth out those irritating quirks. The core features of tibbles is to have a nicer printing method as well as being “surly” and “lazy”. 
+
+Ex. Iris dataset doesn't fit in output (horizontally across), so you have to scroll down to see some of the vairables. It's fine but that can be a huge issue when the dfs have a ton or rows. We also don't see what the types of the variables are. 
+
+```{r}
+library(tibble)
+
+iris ## as a df, doesn't show all the relevant info
+as.tibble(iris) ## we see the first 10 rows, see the types of the variables, and shows what the additional columns are (gorg)
+```
+
+Tibbles are "surly" and "lazy"
+
+  + Lazy meaning they preserve the data type if they can (type consistent). Subsetting a tibble will always result in a tibble. This is different in column subsetting from data frames
+  
+    - Doesn't do partial matching
+    
+    - Only vectors with length 1 will undergo length coercion / recycling - anything else throws an error
+    
+  + Surly as in they will tell you when they don't like what you want them to do
+  
+Tibbles are just specialized data frames, and will fall back to the base data frame methods when needed.
+
+#### magrittr
+
+Magrittr’s pipe is an infix operator that allows us to link two functions together in a way that is readable from left to right. 
+
+```{r}
+g(x=1, y=2) %>%  # %>%  is the operator, |> is the new pipe
+  f(n=2)
+```
+
+Base R has a pipe (`|>`) that you can use without loading tidyverse/magrittr/dplyr. I don't like it though. 
+
+#### dplyr
+
+```{r}
+library(dplyr)
+library(nycflights13)
+
+flights |> select(starts_with("dep"), starts_with("arr")) ## starts_with is cool
+
+flights |> select(where(is.numeric)) ## where is also cool, like a logical subset
+
+flights |> relocate(carrier, origin, dest) ## move these columns to the start (or end)
+
+flights |> pull("year") |> head() ## oooh pull
+
+## you can also use the .by argument in summarize
+```
+
+The .by (and by) arguments are used for per operation grouping while group_by() is intended for persistent grouping.
+
+```{r}
+flights |> 
+  summarize(
+    n = n(), 
+    min_dep_delay = min(dep_delay, na.rm=TRUE), 
+    max_dep_delay = max(dep_delay, na.rm=TRUE),
+    .by = origin
+  )
+```
+

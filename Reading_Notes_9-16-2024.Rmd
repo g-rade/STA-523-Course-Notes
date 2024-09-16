@@ -1,0 +1,78 @@
+---
+title: "Reading_Notes_9-16-2024"
+author: "Grace Rade"
+date: "2024-09-14"
+output: html_document
+---
+
+## Dplyr and Tidy Data
+
+#### Tidy Data
+
+There are three requirements for tidy data:
+
+  1. Each variable goes in a columns
+  
+  2. Each observation goes in a row
+  
+  3. Each value goes in a cell
+  
+These are inter-related and it's impossible to only satisfy two of the three. In practice, you only need to put each dataset into a tibble and each variable into a column. 
+
+The advantages of tidy data are that dataset format is standardized across different sources and that it is really easy to wrok with in R. However, not all data you encounter is tidy. This is becuase not a lot of people are familiar with tidy format, and data is often organized to make entry easy or for a specific purpose. 
+
+Sometimes you will have to pivot the dataset to get it into tidy format, meaning that you might have to fix a variable spread across columns or an observation spread across rows. You can pivot longer or pivot wider, in order to get the data tidy. 
+
+```{r}
+library(tidyverse)
+
+## pivot longer: column names are not names of variables, but values of a variable
+
+table4a ## the variable names 1999 and 2000 are the values of the year variable
+
+table4a %>% 
+  pivot_longer(c(`1999`, `2000`), names_to = "year", values_to = "cases") ## fixed it, now there are more rows
+```
+
+* note that the columns to pivot are chosen using `select()` notation
+
+```{r}
+## pivot wider: observations take up multiple rows
+
+table2 ## there are two rows for each observation becuase cases and population aren't variables
+
+table2 %>%
+    pivot_wider(names_from = type, values_from = count) ## now there are more columns
+
+```
+
+There are also the `separate()` and `unite()` functions to deal with un-tidy data. `separeate()` pulls apart one column into multiple columns, by splitting wherever a separator character appears.
+
+```{r}
+table3 ## rate has cases/population as a character value, we want them separate
+
+table3 %>% 
+  separate(rate, into = c("cases", "population")) ## neat, the variables are still characters
+
+## we can also specify the separator in the function and whether or not we want to convert the variables into differet types
+
+table3 %>% 
+  separate(rate, into = c("cases", "population"), sep ="/", convert = TRUE)
+
+## we can also specify to separate after a certain number of characters
+
+new <- table3 %>% 
+  separate(year, into = c("century", "year"), sep = 2)
+
+```
+
+`unite()` puts multiple columns into a single columns. 
+
+```{r}
+new ## as above
+
+table5 %>% 
+  unite(new_year, century, year, sep = "") ## so below
+
+```
+
