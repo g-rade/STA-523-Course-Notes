@@ -1,0 +1,46 @@
+---
+title: "Lecture_Notes_9-18-2024"
+author: "Grace Rade"
+date: "2024-09-18"
+output: html_document
+---
+## Tidyr
+
+#### Course Schedule Notes:
+
+  + HW3 is gonna be short, only one week to work on it
+  
+  + Week 7, the midterm is released
+  
+#### Reshaping Data
+
+```{r}
+library(tidyverse)
+
+
+palmerpenguins::penguins %>% 
+  count(island, species) %>% ## use pivot wider to make a frequency table
+  pivot_wider(
+  id_cols = island, 
+  names_from = species, 
+  values_from = n
+)
+```
+
+#### Rectangling
+
+We use rectangling to make data objects that are not in rectangualr format into objects in rectangular format so that we can actually do stuff with it.
+
+```{r}
+str(repurrrsive::sw_people) ## this is a list but everything looks like the rows of a df
+
+## let's start by treating the overall list as a single column of a data frame
+sw_df = tibble::tibble(
+  people = repurrrsive::sw_people
+) %>% 
+  as.data.frame(sw_df) ## the only rule about a df is that the column has to be a vector, lists are vectors (list columns print way better in tibbles)
+
+ sw_df <- sw_df %>% 
+  unnest_wider(people) ## now we unnest to unpack the list of lists into several columns
+```
+
