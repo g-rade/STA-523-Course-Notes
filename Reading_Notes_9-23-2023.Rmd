@@ -1,0 +1,152 @@
+---
+title: "Reading_Notes_9-23-2024"
+author: "Grace Rade"
+date: "2024-09-22"
+output: html_document
+---
+## Functional Programming
+
+```{r}
+library(tidyverse)
+```
+
+#### Functionals vs. For Loops
+
+R is a functional programming language, meaning it is possible to wrap a loop ina. functiona nd call that function instead.The goal of using purrr functions instead of for loops is to allow you to break common list manipulation challenges into independent pieces:
+
+  + How can you solve the problem for a single element of the list? Once you’ve solved that problem, purrr takes care of generalising your solution to every element in the list.
+
+  + If you’re solving a complex problem, how can you break it down into bite-sized pieces that allow you to advance one small step towards a solution? With purrr, you get lots of small pieces that you can compose together with the pipe.
+  
+#### The map functions
+
+The pattern of looping over a vector, doing something to each element and saving the results is so common that the purrr package provides a family of functions to do it for you.
+
+  + `map()` makes a list.
+  
+  + `map_lgl()` makes a logical vector.
+  
+  + `map_int()` makes an integer vector.
+  
+  + `map_dbl()` makes a double vector.
+  
+  + `map_chr()` makes a character vector.
+  
+Each function takes a vector as input, applies a function to each piece, and then returns a new vector that’s the same length (and has the same names) as the input. The type of the vector is determined by the suffix to the map function. The chief benefits of using functions like map() is not speed, but clarity: they make your code easier to write and to read.
+
+```{r}
+## exmaple
+
+df <- tibble(
+  a = rnorm(10),
+  b = rnorm(10),
+  c = rnorm(10),
+  d = rnorm(10)
+) ## make a df
+
+map_dbl(df, mean)
+
+map_dbl(df, median)
+
+map_dbl(df, sd) ## focus is on the operation being performed, not the bookkeeping of loops
+
+```
+
+
+The `apply()` family of functions is similar to `map()` but in base R. 
+
+  + `lapply()` is basically identical to map(), except that map() is consistent with all the other functions in purrr, and you can use the shortcuts for .f.
+
+  + Base `sapply()` is a wrapper around `lapply()` that automatically simplifies the output. This is useful for interactive work but is problematic in a function because you never know what sort of output you’ll get.
+  
+  + `vapply()` is a safe alternative to `sapply()` because you supply an additional argument that defines the type. The only problem with vapply() is that it’s a lot of typing: `vapply(df, is.numeric, logical(1))` is equivalent to `map_lgl(df, is.numeric)`. One advantage of `vapply()` over purrr’s map functions is that it can also produce matrices — the map functions only ever produce vectors.
+  
+#### Dealing with Failure
+
+`safely()` is an adverb: it takes a function (a verb) and returns a modified version. In this case, the modified function will never throw an error. Instead, it always returns a list with two elements:
+
+  + result is the original result. If there was an error, this will be NULL.
+
+  + error is an error object. If the operation was successful, this will be NULL.
+  
+```{r}
+safe_log <- safely(log)
+str(safe_log(10))
+
+str(safe_log("a"))
+
+## safety is deigned to work with map
+x <- list(1, 10, "a")
+y <- x %>% map(safely(log))
+str(y)
+
+## This would be easier to work with if we had two lists: one of all the errors and one of all the output. 
+y <- y %>% transpose()
+str(y)
+
+## possibly() also works too
+x <- list(1, 10, "a")
+x %>% map_dbl(possibly(log, NA_real_))
+
+## quietly() performs a similar role to safely(), but instead of capturing errors, it captures printed output, messages, and warnings
+x <- list(1, -1)
+x %>% map(quietly(log)) %>% str()
+```
+
+#### Mapping over multiple arguments
+
+Often you have multiple related inputs that you need iterate along in parallel. That’s the job of the `map2()` and `pmap()` functions.
+
+```{r}
+map2(mu, sigma, rnorm, n = 5) %>% str() ## iterates over two arguments
+
+n <- list(1, 3, 5)
+args1 <- list(n, mu, sigma)
+args1 %>%
+  pmap(rnorm) %>% 
+  str() ## iterates over many arguments
+```
+
+You can also vary the function itselfe and use `invoke_map()`. 
+
+```{r}
+f <- c("runif", "rnorm", "rpois")
+param <- list(
+  list(min = -1, max = 1), 
+  list(sd = 5), 
+  list(lambda = 10)
+)
+
+invoke_map(f, param, n = 5) %>% str()
+```
+
+#### Walk
+
+Walk is an alternative to map that you use when you want to call a function for its side effects, rather than for its return value. . You typically do this because you want to render output to the screen or save files to disk - the important thing is the action, not the return value. 
+
+```{r}
+x <- list(1, "a", 3)
+
+x %>% 
+  walk(print)
+```
+
+#### Other List Things 
+
+A number of functions work with predicate functions that return either a single TRUE or FALSE.
+
+  + `keep()` and `discard()` keep elements of the input where the predicate is TRUE or FALSE respectively. 
+  
+  + `some()` and `every()` determine if the predicate is true for any or for all of the elements. 
+  
+  + `detect()` finds the first element where the predicate is true; `detect_index()` returns its position. `
+  
+  + head_while()` and `tail_while()` take elements from the start or end of a vector while a predicate is true.
+  
+Sometimes you have a complex list that you want to reduce to a simple list by repeatedly applying a function that reduces a pair to a singleton. This is useful if you want to apply a two-table dplyr verb to multiple tables.
+
+  + reduce() takes a “binary” function (i.e. a function with two primary inputs), and applies it repeatedly to a list until there is only a single element left
+  
+  + accumulate() is similar but it keeps all the interim results. You could use it to implement a cumulative sum
+
+
