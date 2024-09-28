@@ -1,0 +1,74 @@
+---
+title: "Reading_Notes_10-2-2024"
+author: "Grace Rade"
+date: "2024-09-28"
+output: html_document
+---
+## stringr and RegEx
+
+There are four main families of functions in stringr:
+
+  1. Character manipulation: these functions allow you to manipulate individual characters within the strings in character vectors.
+  
+    + `str_length()`, `str_sub()`, `str_dup()`
+
+  2. Whitespace tools to add, remove, and manipulate whitespace.
+    
+    + `str_pad()`, `str_trim()`, `str_trunc()`, `str_wrap()` 
+
+  3. Locale sensitive operations whose operations will vary from locale to locale.
+  
+    + `str_to_upper()`, `str_to_title()`, `str_to_lower()`, `str_order()`, `str_sort()`
+
+  4. Pattern matching functions. These recognise four engines of pattern description. The most common is regular expressions, but there are three other tools.
+  
+    + `str_detect()`, `str_count()`, `str_locate()`, `str_extract()`, `str_match()`, `str_split()`, `str_replace()`
+    
+    + Engines:
+    
+      - Regular expressions, the default, as shown above, and described in vignette("regular-expressions"). 
+      
+      - Fixed bytewise matching, with fixed().
+      
+      - Locale-sensitive character matching, with coll()
+      
+      - Text boundary analysis with boundary().
+      
+#### RegEx
+
+  + `.`: means any character, `str_view(x, ".a."), will extract the a and any characters on either side of it (except newline)
+  
+  + `\` to escape special behavior. to search for periods, use `\.`
+  
+    - to create a regular expression, you need an exrtra `\`, so looking for the string "."m the regex would be `\\.`
+    
+  + `^` to match the start of the string.
+  
+  + `$` to match the end of a string
+  
+  + `\d` matches any digit.
+  
+  + `\s` matches any whitespace (e.g. space, tab, newline).
+  
+  + `[abc]` matches a, b, or c.
+  
+  + `[^abc]` matches anything except a, b, or c.
+  
+  + `?` 0 or 1
+  
+  + `+` 1 or more
+  
+  + `*` 0 or more
+  
+  + `{n}` exactly n
+  
+  + `{n,}` n or more 
+  
+  + `{,m}` at most m
+  
+  + `{n,m}` between n and m
+
+
+    
+
+  

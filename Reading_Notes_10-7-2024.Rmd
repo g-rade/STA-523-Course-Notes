@@ -1,0 +1,47 @@
+---
+title: "Reading_Notes_10-7-2024"
+author: "Grace Rade"
+date: "2024-09-28"
+output: html_document
+---
+## Webscraping
+
+Using the SelectorGadget:
+
+  1. To use it, open the page you want to scrape, then:
+
+  2. Click the SelectorGadget entry in your bookmark bar.
+
+  3. Click on the element you want to select. SelectorGadget will make a first guess at what css selector you want. It’s likely to be bad since it only has one example to learn from, but it’s a start. Elements that match the selector will be highlighted in yellow.
+
+  4. Click on elements that shouldn’t be selected. They will turn red. Click on elements that should be selected. They will turn green.
+
+  5. Iterate until only the elements you want are selected. SelectorGadget isn’t perfect and sometimes won’t be able to find a useful css selector. Sometimes starting from a different element helps.
+  
+```{r}
+library(rvest)
+html <- read_html("https://rvest.tidyverse.org/articles/starwars.html") ## read in the web address
+
+html %>% 
+  html_element("h2") %>% 
+  html_text2() ## get the title of the hilm
+
+html %>% 
+  html_elements(".crawl p") %>% 
+  html_text2() %>% 
+  .[1:4] ## get the description of the film
+
+films <- html %>% html_elements("section")
+films ## list of films
+
+films %>% 
+  html_element("h2") %>% 
+  html_text2() ## list of film titles
+
+films %>% 
+  html_element(".crawl") %>% 
+  html_text2() %>% 
+  .[[1]] %>% 
+  writeLines() ## attack of the clones summary
+```
+
