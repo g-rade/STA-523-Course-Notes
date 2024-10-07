@@ -1,0 +1,131 @@
+---
+title: "Lecture_Notes_10-7-2024"
+author: "Grace Rade"
+date: "2024-10-07"
+output: html_document
+---
+```{r}
+library(tidyverse)
+library(rvest)
+```
+
+
+## Web Scraping
+
+Most webpages on the internet are going to be in Hypertext Markup Language (HTML):
+
+  + it is structural/hierarchical, but often not useful for analysis (flat/tidy)
+  
+    - tags are nested
+    
+  + sometimes it is written by people, which means its easy to read and figure out, and sometimes it is not
+  
+`rvest` is the package we are going to be using to web-scrape. It is a low level wrapper around `xml2`, which is not super user-friendly. `rvest` sits ontop of `xml2` and makes it more user-friendly and accessible. The majority of tasks you will need to acocmplish can be accomplished with `rvest`. 
+
+Core finctions:
+  + read_html() - read HTML data from a url or character string.
+
+  + `html_elements()` / `html_nodes()` - select specified elements from the HTML document using CSS selectors (or xpath). (nodes has been superceded)
+
+  + `html_element()` / `html_node()` - select a single element from the HTML document using CSS selectors (or xpath).
+
+  + `html_table()` - parse an HTML table into a data frame.
+
+  + `html_text()` / `html_text2()` - extract tag’s text content.
+
+  + `html_name` - extract a tag/element’s name(s).
+
+  + `html_attrs` - extract all attributes.
+  
+  + `html_attr` - extract attribute value(s) by name.
+  
+```{r}
+html = 
+'<html>
+  <head>
+    <title>This is a title</title>
+  </head>
+  <body>
+    <p align="center">Hello world!</p>
+    <br/>
+    <div class="name" id="first">John</div>
+    <div class="name" id="last">Doe</div>
+    <div class="contact">
+      <div class="home">555-555-1234</div>
+      <div class="home">555-555-2345</div>
+      <div class="work">555-555-9999</div>
+      <div class="fax">555-555-8888</div>
+    </div>
+  </body>
+</html>'
+
+## there is a head node and a body node, the body node has a bunch of children in it 
+
+read_html(html) ## you can see the current node, it's type, and any children it has
+
+```
+
+The thing we are going to use to extract the information we want is the CSS Selector. All of these bits we want have names, so we can use the name of the bit to select it from the HTML. 
+
+```{r}
+read_html(html) |> html_elements("p") ## this selects a nodeset, loses the structure
+
+read_html(html) |> html_elements("p") |> html_text() ## now we can use the other rvest functions to deal with the nodeset
+
+## let's select something that pays attention to the hierarchy
+read_html(html) |> html_elements("body div")
+read_html(html) |> html_elements("body>div") ## this one finds the child of the body tag
+read_html(html) |> html_elements("body div div") ## even more nested
+```
+
+We are going to be using the selector gadget to help identify html elements of interest. It does this by constructing a css selector which can be used to subset the HTML document. 
+
+[Here is a complete list of selectors](https://www.w3schools.com/CSSref/css_selectors.php)
+
+Note: `html_text2()` gets rid of extraneous whitespace and cleans up some formatting
+
+```{r}
+html = read_html(
+  "<p>  
+    This is the first sentence in the paragraph.
+    This is the second sentence that should be on the same line as the first sentence.<br>This third sentence should start on a new line.
+  </p>"
+)
+
+html |> html_text()
+
+html |> html_text2()
+```
+
+
+HTML also has a specific format for tables, which are more generic than data frames. `html_table()` usually does a decent job at cleanign it up, but you may need to do more. 
+
+```{r}
+html_table = 
+'<html>
+  <head>
+    <title>This is a title</title>
+  </head>
+  <body>
+    <table>
+      <tr> <th>a</th> <th>b</th> <th>c</th> </tr>
+      <tr> <td>1</td> <td>2</td> <td>3</td> </tr>
+      <tr> <td>2</td> <td>3</td> <td>4</td> </tr>
+      <tr> <td>3</td> <td>4</td> <td>5</td> </tr>
+    </table>
+  </body>
+</html>'
+
+read_html(html_table) |>
+  html_elements("table") |> 
+  html_table()
+```
+
+Note: follow the rules of robots.txt or risk getting you IP address banned from the website. Don't submit too many requests to quickly, and use the `polite` package. We can use the `bow()` and the `scape()` functions. 
+
+  + seek permission
+  
+  + go slowly
+  
+  + never ask twice
+  
