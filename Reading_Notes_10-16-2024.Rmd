@@ -1,0 +1,60 @@
+---
+title: "Reading_Notes_10-16-2024"
+author: "Grace Rade"
+date: "2024-10-09"
+output: html_document
+---
+
+## Building APIs
+
+```{r}
+library(plumber)
+```
+
+Plumber allows you to create a web API by merely decorating your existing R source code with roxygen2-like comments. These comments allow plumber to make your R functions available as API endpoints. You can use either #* as the prefix or #', but we recommend the former since #' will collide with roxygen2. You can visit this URL using a browser or a terminal to run your R function and get the results. 
+
+#### Web APIs
+
+The Hypertext Transfer Protocol (HTTP) is the dominant medium by which information is exchanged on the Internet. An Application Programming Interface (API) is a broad term that defines the rules that guide your interaction with some software.Plumber allows you to create APIs by merely decorating your existing R code with special annotations. Plumber translates the annotations you place on your functions into an HTTP API that can be called from other machines on your network. 
+
+```{r, eval = F}
+# plumber.R
+
+#* Echo the parameter that was sent in
+#* @param msg The message to echo back.
+#* @get /echo
+function(msg=""){
+  list(msg = paste0("The message is: '", msg, "'"))
+}
+
+#* Plot out data from the iris dataset
+#* @param spec If provided, filter the data to only this species (e.g. 'setosa')
+#* @get /plot
+#* @serializer png
+function(spec){
+  myData <- iris
+  title <- "All Species"
+
+  # Filter if the species was specified
+  if (!missing(spec)){
+    title <- paste0("Only the '", spec, "' Species")
+    myData <- subset(iris, Species == spec)
+  }
+
+  plot(myData$Sepal.Length, myData$Petal.Length,
+       main=title, xlab="Sepal Length", ylab="Petal Length")
+}
+```
+
+Once you have plumber installed, you can use the pr() function to translate this R file into a Plumber API:
+
+```{r, eval = F}
+root <- pr("plumber.R")
+root
+
+## The pr object now encapsulates all the logic represented in your plumber.R file. The next step is to bring the API to life using the pr_run() method:
+
+root %>% pr_run()
+```
+
+You should see a message about your API running on your computer on port 8000. The API will continue running in your R session until you press the Esc key.

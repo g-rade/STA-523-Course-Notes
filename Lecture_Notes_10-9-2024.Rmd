@@ -1,0 +1,45 @@
+---
+title: "Lecture_Notes_10-9-2024"
+author: "Grace Rade"
+date: "2024-10-09"
+output: html_document
+---
+
+## Web APIs
+
+An API is a way of invoking an action on a remote server. 
+
+#### URLs
+
+In a URL, query strings provies named paramter(s) and value(s) that modify the behavior of the resulting page. 
+
+URL encoding is will often be handled automatically by your web browser or other tool, but it is useful to know a bit about what is happening
+  
+  + Spaces will encoded as ‘+’ or ‘%20’ (spaces are not allowed)
+  
+  + Certain characters are reserved and will be replaced with the percent-encoded version within a URL (check chart in slides)
+  
+  + Characters that cannot be converted to the correct charset are replaced with HTML numeric character references (e.g. a Σ would be encoded as &#931;)
+  
+#### RESTful APIs
+
+REpresentational State Transfer describes an architectural style for web services (not a standard) all communication via HTTP requests
+
+Key features:
+  + client–server architecture
+
+  + addressible (specific URL endpoints)
+  
+  + stateless (no client information stored between requests)
+
+  + layered / hierarchical (almost everything is in json)
+  
+  + cacheability
+  
+  + pagenation: wil give yout 30 results or less, if there are more than 30 endpoints, you are responsuble for asking for them\
+  
+GitHub provides a REST API that allows you to interact with most of the data available on the website. There is extensive documentation and a huge number of endpoints to use - almost anything that can be done on the website can also be done via the API.
+
+  + usually there is a limit to the number of requests in a certain timeframe, varies by website
+
+
