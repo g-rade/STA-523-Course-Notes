@@ -1,0 +1,10 @@
+---
+title: "Lecture_Notes_10-16-2024"
+author: "Grace Rade"
+date: "2024-10-16"
+output: html_document
+---
+
+## Building APIs
+
+We use the package `plumber` to build out web APIs. `plumber` allows you to merely decorate existing R source code with roxygen2-like comments. You just write an R script and add the metadata like you were adding documentation to a function/dataset. 
