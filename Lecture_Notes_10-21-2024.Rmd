@@ -1,0 +1,57 @@
+---
+title: "Lecture_Notes_10-21-2024"
+author: "Grace Rade"
+date: "2024-10-21"
+output: html_document
+---
+
+## Filesystems, Denny's LQ Scraping
+
+#### Filesystems
+
+Almost all commonly used operating systems make use of a hierarchical file structure (folders nested within each other). Think of it as a tree. There are relative file paths and absolute file paths. Relative file paths are in relation to the working directory (better to use) and absolute file paths are in relation to the machine you are currently on. Don't use `setwd`, pretend it doesn't exist becuase that means the code will only work for you. 
+
+```{r}
+## Special Directories
+
+#dir(path = "data/")
+
+#dir(path = "data/", all.files = TRUE) ## this one shows hidden files
+```
+
+Tilde (~) is a shortcut that expands to the name of your home directory on unix-like systems.
+
+Just like R, RStudio also makes use of a working directory for each of your sessions - we haven’t had to discuss these yet because when you use an RStudio project, the working directory is automatically set to the directory containing the Rproj file.
+
+This makes your project portable as all you need to do is to send the project folder to a collaborator (or push to GitHub) and they can open the project file and have identical *relative* path structure.
+
+`here`: is a package that tries to simplify this process by identifying the root of your project for you using simple heuristics and then providing relative paths from that root directory to everything else in your project
+
+```{r}
+here::here()
+```
+
+
+**Rules of here: **
+
+  + The project root is established with a call to here::i_am(). Although not recommended, it can be changed by calling here::i_am() again.
+
+  + In the absence of such a call (e.g. for a new project), starting with the current working directory during package load time, the directory hierarchy is walked upwards until a directory with at least one of the following conditions is found:
+
+    - contains a file .here
+    
+    - contains a file matching [.]Rproj$ with contents matching ^Version: in the first line
+    
+    - contains a file DESCRIPTION with contents matching ^Package:
+    
+    - contains a file remake.yml
+    
+    - contains a file .projectile
+    
+    - contains a directory .git
+    
+    - contains a file .git with contents matching ^gitdir
+    
+    - contains a directory .svn
+    
+    - In either case, here() appends its arguments as path components to the root directory.
