@@ -1,0 +1,52 @@
+---
+title: "Reading_Notes_10-21-23-2024"
+author: "Grace Rade"
+date: "2024-10-22"
+output: html_document
+---
+
+## file systems
+
+Use the `fs` package to look through your file systems. Can be approximated with base R or the command line, but package has some nice functionality. 
+
+  + all the functions are vectorized
+  
+  + returns predictable values
+  
+  + explicit failure
+  
+  + puts the paths into UTF-8
+  
+  + consistent naming convention
+  
+    - directory functions are `dir_x`
+    
+    - file functions are `file_x`
+    
+    - path functions are `path_`
+    
+    
+## make
+
+GNU Make is a tool which controls the generation of executables and other non-source files of a program from the program's source files. Makefiles are machine-readable documentation that make your workflow reproducible. 
+
+  + The core concept is that generated files depend on other files. When generated files are missing, or when files they depend on have changed, needed files are re-made using a sequence of commands you specify.
+  
+    -Make encourages you to express your workflow backwards as dependencies between files, rather than forwards as a sequential recipe (do a dependency graph)
+
+  + Make gets its knowledge of how to build your program from a file called the makefile, which lists each of the non-source files and how to compute it from other files. Then make uses the makefile to build the program
+  
+  + Make figures out automatically which files it needs to update, based on which source files have changed. It also automatically determines the proper order for updating files, in case one non-source file depends on another non-source file.
+  
+    - when you make a change to your file, it updates only those non-source files that depend directly or indirectly on the source files that you changed.
+  
+  + Make is not limited to any particular language or limited to building a package. 
+  
+## dbplyr
+
+Work with the `DBL` package. DBI is automatically installed with dbplyr, but you need to install a specific backend for the database that you want to connect to.
+
+The goal of dbplyr is to automatically generate SQL for you so that you’re not forced to use it. However, SQL is a very large language and dbplyr doesn’t do everything. dbplyr focuses on SELECT statements. 
+
+
+
