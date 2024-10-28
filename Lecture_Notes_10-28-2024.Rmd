@@ -1,0 +1,178 @@
+---
+title: "Lecture_Notes_10-28-2024"
+author: "Grace Rade"
+date: "2024-10-28"
+output: html_document
+---
+## Databases and dbplyr
+
+Big data is data that is bigger than the biggest instance of memory that you can easily access. It's so big that you have to worry about it. As data gets bigger, working with it becomes slower. For really big data, sometimes analysis is not feasible becuase it is too big. 
+
+So usually possible to grow our disk storage to accommodate our data. However, memory is usually the limiting resource, and if we can’t fit everything into memory? Create blocks - group related data (i.e. rows) and read in multiple rows at a time. Optimal size will depend on the task and the properties of the disk. 
+
+
+Even with blocks, any kind of querying / subsetting of rows requires a linear search, which requires O(N) reads. 
+
+  + We can do better if we are careful about how we structure our data, specifically sorting’ some (or all) of the columns.
+
+  + Sorting is expensive, O(NlogN), but it only needs to be done once.
+
+  + After sorting, we can use a binary search for any subsetting tasks, O(logN)
+
+  + In a databases these “sorted” columns are refered to as indexes.
+
+  + Indexes require additional storage, but usually small enough to be kept in memory even if blocks need to stay on disk.
+  
+In general, trade off between storage and efficiency. 
+
+#### Databases 
+
+Low level package for interfacing R with Database management systems (DBMS) that provides a common interface to achieve the following functionality:
+
+  + connect/disconnect from DB
+
+  + create and execute statements in the DB
+
+  + extract results/output from statements
+
+  + error/exception handling
+
+  + information (meta-data) from database objects
+
+  + transaction management (optional)
+  
+DBI is a specification, not an implementation, and there are a number of packages that implement the DBI specification for different database systems.
+
+
+```{r}
+library(RSQLite)
+library(tidyverse)
+
+con = dbConnect(RSQLite::SQLite(), ":memory:") ##c reate a connection to our database
+str(con)
+
+employees = tibble(
+  name   = c("Alice","Bob","Carol","Dave","Eve","Frank"),
+  email  = c("alice@company.com", "bob@company.com",
+             "carol@company.com", "dave@company.com",
+             "eve@company.com",   "frank@comany.com"),
+  salary = c(52000, 40000, 30000, 33000, 44000, 37000),
+  dept   = c("Accounting", "Accounting","Sales",
+             "Accounting","Sales","Sales"),
+) ## make an example table
+
+dbListTables(con)
+dbWriteTable(con, name = "employees", value = employees) ## add this to the database
+dbListTables(con)
+
+dbWriteTable(con, "employs", employees) ## write the tables
+dbListTables(con)
+
+dbRemoveTable(con,"employs") ## remove the table we added
+dbListTables(con)
+
+
+(res = dbSendQuery(con, "SELECT * FROM employees")) ## query the database
+dbFetch(res) ## fetch the result
+dbClearResult(res) ## clear the results
+
+(res = dbGetQuery(con, "SELECT * FROM employees")) ## dbGetQuery does all three steps in one
+```
+
+`dbCreateTable()` will create a new table with a schema based on an existing data.frame/tibble, but it does not populate that table with data.
+
+```{r}
+dbCreateTable(con, "iris", iris)
+(res = dbGetQuery(con, "select * from iris"))
+
+dbAppendTable(con, name = "iris", value = iris) ## add the data
+dbGetQuery(con, "select * from iris") |> 
+  as_tibble() ## now we can query and fetch it
+```
+
+Now that we are done, we can close the connection. 
+
+```{r}
+con
+dbDisconnect(con)
+con ## it is disconnected
+```
+
+#### dplry and databases
+
+We can use dplyr even when we are not working with local data. dplry can interface with databases like SQL really easily. 
+
+```{r}
+db = DBI::dbConnect(RSQLite::SQLite(), "flights.sqlite") ## let's create a new database with flights on the file system
+
+## we now have a connection to flifhts.sqlite object
+
+flight_tbl = dplyr::copy_to(
+    db, nycflights13::flights, name = "flights", temporary = FALSE) 
+```
+
+All of this data now lives in the database on the *filesystem* not in *memory*. 
+
+```{r}
+pryr::object_size(db)
+
+pryr::object_size(flight_tbl)
+
+pryr::object_size(nycflights13::flights) 
+
+## it's very small in size, so we know that it's not being taken up by memory
+```
+
+If the object already exists, we can access the database and give it the name that we want. 
+
+```{r}
+dplyr::tbl(db, "flights")
+
+oct_21 = flight_tbl |>
+   filter(month == 10, day == 21) |>
+   select(origin, dest, tailnum) ## let's query
+
+oct_21
+
+dplyr::collect(oct_21) ## now we bring it into r
+```
+
+
+dplyr / dbplyr uses lazy evaluation as much as possible, particularly when working with non-local backends.
+
+  + When building a query, we don’t want the entire table, often we want just enough to check if our query is working / makes sense.
+
+  + Since we would prefer to run one complex query over many simple queries, laziness allows for verbs to be strung together.
+
+  + Therefore, by default dplyr
+
+    * won’t connect and query the database until absolutely necessary (e.g. show output),
+
+    * and unless explicitly told to, will only query a handful of rows to give a sense of what the result will look like.
+
+    * we can force evaluation via `compute()`, `collect()`, or `collapse()`
+    
+```{r}
+show_query(oct_21) ## this will show you what query statement the object is generating for you
+
+oct_21 |> 
+  summarize(
+    n=n(), .by = c(origin, dest)
+  ) |> 
+  show_query()
+
+```
+
+There is a nice function to translate from R to SQL notation. Nice. 
+
+```{r}
+con = dbplyr::simulate_dbi()
+dbplyr::translate_sql(x == 1 & (y < 2 | z > 3), con=con)
+
+dbplyr::translate_sql(x ^ 2 < 10, con=con)
+
+dbplyr::translate_sql(x %% 2 == 10, con=con)
+
+## SQL doesn't really do math, so lots of math functions don't exist in SQL that do exist in R. Ex. sd() function
+```
+
