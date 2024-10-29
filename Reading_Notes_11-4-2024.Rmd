@@ -1,0 +1,98 @@
+---
+title: "Reading_Notes_11-4-2024"
+author: "Grace Rade"
+date: "2024-10-29"
+output: html_document
+---
+
+## Shiny and bslib
+
+#### Shiny
+
+Shiny apps are contained in a single script called `app.R`. The script `app.R` lives in a directory (for example, `newdir/`) and the app can be run with `runApp("newdir")`. `app.R` has three components:
+
+  + a user interface object: controls the layout and appearance of your app
+  
+  + a server function: contains the instructions that your computer needs to build your app
+
+  + a call to the shinyApp function: creates Shiny app objects from an explicit UI/server pair
+  
+```{r, eval = F}
+library(shiny)
+library(bslib)
+
+# Define UI for app that draws a histogram ----
+ui <- page_sidebar(
+  # App title ----
+  title = "Hello Shiny!",
+  # Sidebar panel for inputs ----
+  sidebar = sidebar(
+    # Input: Slider for the number of bins ----
+    sliderInput(
+      inputId = "bins",
+      label = "Number of bins:",
+      min = 1,
+      max = 50,
+      value = 30
+    )
+  ),
+  # Output: Histogram ----
+  plotOutput(outputId = "distPlot")
+)
+
+# Define server logic required to draw a histogram ----
+server <- function(input, output) {
+
+  # Histogram of the Old Faithful Geyser Data ----
+  # with requested number of bins
+  # This expression that generates a histogram is wrapped in a call
+  # to renderPlot to indicate that:
+  #
+  # 1. It is "reactive" and therefore should be automatically
+  #    re-executed when inputs (input$bins) change
+  # 2. Its output type is a plot
+  output$distPlot <- renderPlot({
+
+    x    <- faithful$waiting
+    bins <- seq(min(x), max(x), length.out = input$bins + 1)
+
+    hist(x, breaks = bins, col = "#007bc2", border = "white",
+         xlab = "Waiting time to next eruption (in mins)",
+         main = "Histogram of waiting times")
+
+    })
+
+}
+
+# See above for the definitions of ui and server
+ui <- ...
+
+server <- ...
+
+shinyApp(ui = ui, server = server)
+
+## run the app
+## For example if your Shiny app is in a directory called my_app, run it with the following code
+runApp("my_app")
+```
+
+A good reference source: [Mastering Shiny](https://mastering-shiny.org) 
+
+#### bslib
+
+The `bslib` R package provides a modern UI toolkit for Shiny and R Markdown based on Bootstrap. It facilitates:
+
+  + Creation of delightful and customizable Shiny dashboards.
+    
+    * The underlying UI components (e.g., cards, value boxes, sidebars, etc) are also designed
+      to work in other contexts (e.g., in R Markdown).
+
+  + Custom theming of Shiny apps and R Markdown documents.
+
+    * Apps can even be themed interactively in real-time.
+
+  + Use of modern versions of Bootstrap and Bootswatch
+
+    * Shiny and R Markdown currently default to Bootstrap 3 and may continue to do so to            maintain backwards compatibility.
+    
+  
