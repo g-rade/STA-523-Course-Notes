@@ -1,0 +1,74 @@
+---
+title: "Reading_Notes_11-11-2024"
+author: "Grace Rade"
+date: "2024-11-07"
+output: html_document
+---
+## Parallel Computing
+
+At the lowest level, modern CPUs can do several basic operations simultaneously (e.g. integer and floating-point arithmetic), and several imple- mentations of external BLAS libraries use multiple threads to do parts of basic vector/matrix operations in parallel.
+
+The `parallel` package handles running much larger chunks of computations in parallel. The basic computational model is
+
+  a. Start up M ‘worker’ processes, and do any initialization needed on the workers.
+
+  b. Send any data required for each task to the workers.
+
+  c. Split the task into M roughly equally-sized chunks, and send the chunks (including the R code needed) to the workers.
+
+  d. Wait for all the workers to complete their tasks, and ask them for their results.
+
+  e. Repeat steps (b–d) for any further tasks.
+
+  f. Shut down the worker processes.
+  
+A slightly different model is to split the task into $M_1 > M$ chunks, send the first M chunks to the workers, then repeatedly wait for any worker to complete and send it the next remaining task: see the section on ‘load balancing’.
+
+In principle the workers could be implemented by threads1 or lightweight processes, but in the current implementation they are full processes. They can be created in one of three ways:
+
+  + Via `system("Rscript")` or similar to launch a new process on the current machine or a similar machine with an identical R installation. This then needs a way to communicate between master and worker processes, which is usually done via sockets.
+  
+    * Following snow, a pool of worker processes listening via sockets for commands from the master is called a ‘cluster’ of nodes.
+
+  + Via forking. Fork is a concept2 from POSIX operating systems, and should be available on all R platforms except Windows. This creates a new R process by taking a complete copy of the master process, including the workspace and state of the random-number stream. However, the copy will (in any reasonable OS) share memory pages with the master until modified so forking is very fast. Pioneered by the `multicore` package
+  
+  + Using OS-level facilities to set up a means to send tasks to other members of a group of machines. There are several ways to do that, and for example package snow can make use of MPI (‘message passing interface’) using R package Rmpi. Communication overheads can dominate computation times in this approach, so it is most often used on tightly- coupled networks of computers with high-speed interconnects
+  
+
+Load balancing is potentially advantageous when the tasks take quite dissimilar amounts of computation time, or where the nodes are of disparate capabilities. But some caveats are in order:
+
+
+  a. Random number streams are allocated to nodes, so if the tasks involve random numbers they are likely to be non-repeatable (as the allocation of tasks to nodes depends on the workloads of the nodes). It would however take only slightly more work to allocate a stream to each task.
+
+  b. More care is needed is allocating the tasks. If 1000 tasks need to be allocated to 10 nodes, the standard approach send chunks of 100 tasks to each of the nodes. The load-balancing approach sends tasks one at a time to a node, and the communication overhead may be high. So it makes sense to have substantially more tasks than nodes, but not by a factor of 100 (and maybe not by 10).
+  
+`furrr`: The goal of furrr is to combine purrr’s family of mapping functions with future’s parallel processing capabilities. The result is near drop in replacements for purrr functions such as map() and map2_dbl(), which can be replaced with their furrr equivalents of future_map() and future_map2_dbl() to map in parallel.
+
+## Spatial Data
+
+Simple Features refers to a formal standard (ISO 19125-1:2004) that describes how objects in the real world can be represented in computers, with emphasis on the spatial geometry of these objects. A feature is thought of as a thing, or an object in the real world, such as a building or a tree. Features have geometry describing where on Earth the feature is located, and they have attributes, which describe other properties.
+
+Package `sf` represents simple features as native R objects
+
+```{r}
+library(sf)
+nc <- st_read(system.file("shape/nc.shp", package="sf")) ## shape file
+class(nc) ## class dataframe
+attr(nc, "sf_column") ## attribute of geomentry
+(nc_geom <- st_geometry(nc))  ## list column of the geometry of the features
+
+## we can plot it
+par(mar = c(0,0,1,0))
+plot(nc[1], reset = FALSE) # reset = FALSE: we want to add to a plot with a legend
+plot(nc[1,1], col = 'grey', add = TRUE)
+
+
+par(mar = c(0,0,1,0))
+(w <- which(sapply(nc_geom, length) > 1))
+## [1]  4 56 57 87 91 95
+plot(nc[w,1], col = 2:7)
+```
+
+
+
+
