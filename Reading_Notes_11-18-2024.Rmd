@@ -1,0 +1,66 @@
+---
+title: "Reading_Notes_11-18-2024"
+author: "Grace Rade"
+date: "2024-11-13"
+output: html_document
+---
+ 
+## Tidy Models
+
+```{r}
+library(tidyverse)
+library(tidymodels) ## the tidy models package
+library(readr)       # for importing data
+library(broom.mixed) # for converting bayesian models to tidy tibbles
+library(dotwhisker)
+```
+
+The `tidymodels` package is a tidy framework for fitting models. 
+
+```{r}
+urchins <-
+  # Data were assembled for a tutorial 
+  # at https://www.flutterbys.com.au/stats/tut/tut7.5a.html
+  read_csv("https://tidymodels.org/start/models/urchins.csv") %>% 
+  # Change the names to be a little more verbose
+  setNames(c("food_regime", "initial_volume", "width")) %>% 
+  # Factors are very helpful for modeling, so we convert one column
+  mutate(food_regime = factor(food_regime, levels = c("Initial", "Low", "High")))
+```
+
+This is slightly different syntax than the model fitting we've learned before. 
+
+```{r}
+fit <- linear_reg() %>% ## default is least squeares method
+  set_engine("lm") %>%  ## set your engine for a specific type of linear regression model
+fit(width ~ initial_volume * food_regime, data = urchins) ## specify the variables
+
+fit ## report the model results
+tidy(fit) ## report a nice output tables
+```
+
+We can visualize our results
+
+```{r}
+tidy(fit) %>% 
+  dwplot(dot_args = list(size = 2, color = "black"),
+         whisker_args = list(color = "black"),
+         vline = geom_vline(xintercept = 0, colour = "grey50", linetype = 2)) ## whoo yay forest plot
+```
+
+```{r}
+## we can use the model to predict values
+new_points <- expand.grid(initial_volume = 20, 
+                          food_regime = c("Initial", "Low", "High"))
+new_points ## make a new df
+mean_pred <- predict(fit, new_data = new_points)
+mean_pred ## now we have predicted values
+
+
+## we can predcit confidence intervals too
+conf_int_pred <- predict(fit, 
+                         new_data = new_points, 
+                         type = "conf_int")
+conf_int_pred
+```
+
